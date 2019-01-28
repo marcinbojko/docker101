@@ -1,0 +1,18 @@
+version: "3"
+services:
+  grafana-xxl_1:
+    image: monitoringartist/grafana-xxl:5.4
+    ports:
+      - "3000:3000"
+  grafana-xxl_2:
+    image: monitoringartist/grafana-xxl:4.1
+    ports:
+      - "3001:3000"
+  grafana-xxl_3:
+    image: monitoringartist/grafana-xxl:3.1
+    ports:
+      - "3002:3000"
+  grafana-xxl_4:
+    image: monitoringartist/grafana-xxl:latest
+    ports:
+      - "3003:3000"

@@ -1,0 +1,40 @@
+debug = true
+logLevel = "DEBUG"
+[accessLog]
+  filePath = "/var/log/traefik/access.log"
+#  format = "json"
+defaultEntryPoints = ["http", "https"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+      [[entryPoints.https.tls.certificates]]
+      CertFile = "/ssl/grafana.test-sp.develop.cert"
+      KeyFile = "/ssl/grafana.test-sp.develop.key"
+  [entryPoints.traefik]
+    address = ":8080"
+    compress = true
+#    [entryPoints.traefik.auth.basic]
+#      users = ["admin:password"]
+[api]
+  entryPoint = "traefik"
+  dashboard = true
+
+[metrics]
+  [metrics.prometheus]
+  entrypoint = "traefik"
+  buckets = [0.1,0.3,1.2,5.0]
+
+[retry]
+attempts=3
+
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+watch = true
+swarmmode = false
+exposedbydefault = false

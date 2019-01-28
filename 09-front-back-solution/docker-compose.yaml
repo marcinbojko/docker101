@@ -1,0 +1,47 @@
+version: "3"
+services:
+  grafana-xxl:
+    image: monitoringartist/grafana-xxl:5.4
+    expose:
+      - '3000'
+    networks:
+      - 'back'
+    volumes:
+        - grafana_lib:/var/lib/grafana
+        - grafana_log:/var/log/grafana
+        - grafana_etc:/etc/grafana
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=3000"
+      - "traefik.frontend.entryPoints=http,https"
+      - "traefik.frontend.rule=Host:grafana.test-sp.develop"
+  traefik:
+    image: traefik:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - front
+      - back
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/etc/traefik.toml:/traefik.toml
+      - ./traefik/ssl:/ssl
+      - traefik_logs:/var/log/traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.frontend.rule=Host:localhost'
+      - 'traefik.port=8080'
+      - 'traefik.docker.network=front'
+      - 'traefik.frontend.entryPoints=http,https'
+networks:
+  front:
+  back:
+volumes:
+  grafana_log:
+  grafana_etc:
+  grafana_lib:
+  traefik_logs:
