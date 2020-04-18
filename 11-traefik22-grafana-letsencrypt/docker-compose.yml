@@ -1,0 +1,71 @@
+version: "3.7"
+services:
+  traefik:
+    image: traefik:${TRAEFIK_TAG}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8082:8082"
+    networks:
+      - front
+      - back
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/etc/traefik.yml:/traefik.yml
+      - ./traefik/ssl:/ssl
+      - traefik_logs:/var/log/traefik
+      - traefik_acme:/etc/traefik/acme
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`$TRAEFIK_HOSTNAME`, `localhost`)"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    env_file: ./traefik/etc/cloudflare.env
+  grafana-xxl:
+    restart: unless-stopped
+    image: monitoringartist/grafana-xxl:${GRAFANA_TAG}
+    expose:
+     - "3000"
+    volumes:
+      - grafana_lib:/var/lib/grafana
+      - grafana_log:/var/log/grafana
+      - grafana_etc:/etc/grafana
+      - ./grafana/provisioning:/usr/share/grafana/conf/provisioning
+    networks:
+      - back
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana-xxl-secure.entrypoints=https"
+      - "traefik.http.routers.grafana-xxl-secure.rule=Host(`${GRAFANA_HOSTNAME}`,`*`)"
+      - "traefik.http.routers.grafana-xxl-secure.tls=true"
+      - "traefik.http.routers.grafana-xxl-secure.tls.domains[0].main=${GRAFANA_HOSTNAME}"
+      - "traefik.http.routers.grafana-xxl-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.grafana-xxl-secure.service=grafana-xxl"
+      - "traefik.http.services.grafana-xxl.loadbalancer.server.port=3000"
+      - "traefik.http.services.grafana-xxl.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.grafana-xxl.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.grafana-xxl.loadbalancer.healthcheck.timeout=5s"
+    env_file: ./grafana/grafana.env
+
+volumes:
+  traefik_logs: {}
+  traefik_acme: {}
+  grafana_lib: {}
+  grafana_log: {}
+  grafana_etc: {}
+
+networks:
+  front:
+    ipam:
+      config:
+        - subnet: 172.16.227.0/24
+  back:
+    ipam:
+      config:
+        - subnet: 172.16.226.0/24
